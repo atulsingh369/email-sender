@@ -57,7 +57,7 @@ export default function Home() {
 
   return (
   <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6 text-center">Email Sender</h1>
+      <h1 className="text-3xl font-bold mb-6 text-center">Mail Wave</h1>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {fields.map((field, index) => (
           <div key={field.id} className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
