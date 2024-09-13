@@ -3,6 +3,7 @@ import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 import path from "path";
 import { promises as fs } from "fs";
+import { google } from 'googleapis';
 
 interface EmailConfig {
   hiringManagerEmail: string;
@@ -17,11 +18,98 @@ const hardData = {
     "MERN & MEAN stack, including AWS & Firebase",
     "React.js & Next.js, using multiple UI kits and also with Tailwind CSS & pure CSS",
     "Node.js and Express.js, creating APIs, also implementation of GoLang to create robust Backend, including cloud services like AWS & Firebase",
-    "Docker & Kubernetes, also using GitHub Fastlane to implement CI/CD"
+    "Docker & Kubernetes, also using GitHub Fastlane to implement CI/CD",
   ],
 };
-var industry: string= hardData.industry[0],
+var industry: string = hardData.industry[0],
   skills: string = hardData.skills[0];
+
+const initVariable = async (config: EmailConfig) => {
+  if (
+    config.jobTitle === "Software Engineer" ||
+    config.jobTitle === "Software Engineer Intern" ||
+    config.jobTitle === "Senior Software Engineer" ||
+    config.jobTitle === "Senior Software Engineer Intern" ||
+    config.jobTitle === "Software Developer" ||
+    config.jobTitle === "Software Developer Intern" ||
+    config.jobTitle === "Senior Software Developer" ||
+    config.jobTitle === "Senior Software Developer Intern" ||
+    config.jobTitle === "Full Stack Developer" ||
+    config.jobTitle === "Full Stack Developer Intern" ||
+    config.jobTitle === "Senior Full Stack Developer" ||
+    config.jobTitle === "Senior Full Stack Developer Intern" ||
+    config.jobTitle === "Software Developemnet Engineer"
+  ) {
+    industry = hardData.industry[0];
+    skills = hardData.skills[0];
+  } else if (
+    config.jobTitle === "Frontend Developer" ||
+    config.jobTitle === "Frontend Developer Intern" ||
+    config.jobTitle === "Senior Frontend Developer Intern" ||
+    config.jobTitle === "Senior Frontend Developer" ||
+    config.jobTitle === "React.js Developer" ||
+    config.jobTitle === "React.js Developer Intern" ||
+    config.jobTitle === "Senior React.js Developer Intern" ||
+    config.jobTitle === "Senior React.js Developer" ||
+    config.jobTitle === "React.js Developer" ||
+    config.jobTitle === "React.js Developer Intern" ||
+    config.jobTitle === "Senior React.js Developer Intern" ||
+    config.jobTitle === "Senior React.js Developer" ||
+    config.jobTitle === "React js Developer" ||
+    config.jobTitle === "React js Developer Intern" ||
+    config.jobTitle === "Senior React js Developer Intern" ||
+    config.jobTitle === "Senior React js Developer" ||
+    config.jobTitle === "Next.js Developer" ||
+    config.jobTitle === "Next.js Developer Intern" ||
+    config.jobTitle === "Senior Next.js Developer Intern" ||
+    config.jobTitle === "Senior Next.js Developer" ||
+    config.jobTitle === "Frontend Engineer" ||
+    config.jobTitle === "Frontend Engineer Intern" ||
+    config.jobTitle === "Senior Frontend Engineer" ||
+    config.jobTitle === "Senior Frontend Engineer Intern"
+  ) {
+    industry = hardData.industry[0];
+    skills = hardData.skills[1];
+  } else if (
+    config.jobTitle === "Backend Engineer" ||
+    config.jobTitle === "Backend Engineer Intern" ||
+    config.jobTitle === "Senior Backend Engineer" ||
+    config.jobTitle === "Senior Backend Engineer Intern" ||
+    config.jobTitle === "Backend Developer" ||
+    config.jobTitle === "Backend Developer Intern" ||
+    config.jobTitle === "Senior Backend Developer Intern" ||
+    config.jobTitle === "Senior Backend Developer"
+  ) {
+    industry = hardData.industry[0];
+    skills = hardData.skills[2];
+  } else if (
+    config.jobTitle === "DevOps Engineer" ||
+    config.jobTitle === "Senior DevOps Engineer" ||
+    config.jobTitle === "DevOps Engineer Intern" ||
+    config.jobTitle === "Senior DevOps Engineer Intern"
+  ) {
+    industry = hardData.industry[1];
+    skills = hardData.skills[3];
+  }
+};
+
+async function logIntoSheets(info: nodemailer.SentMessageInfo, config: EmailConfig) {
+  const auth = new google.auth.GoogleAuth({
+    keyFile: './path/to/your/service-account-key.json',
+    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+  });
+
+  const sheets = google.sheets({ version: 'v4', auth });
+
+  const values = [[new Date().toISOString(), config.hiringManagerEmail, config.jobTitle, config.companyName, info.messageId]];
+
+  // await sheets.spreadsheets.values.append({
+  //   spreadsheetId: process.env.GOOGLE_SHEET_ID,
+  //   range: 'Sheet1!A:D',
+  //   valueInputOption: 'USER_ENTERED',
+  //   resource: { values },
+  // });
+}
 
 export async function POST(request: Request) {
   dotenv.config({ path: ".env.local" });
@@ -62,59 +150,10 @@ export async function POST(request: Request) {
   try {
     for (const config of emailConfigs) {
       // Proccessing other values like industry and skills
-      if (
-        config.jobTitle === "Software Engineer" ||
-        config.jobTitle === "Software Engineer Intern" ||
-        config.jobTitle === "Senior Software Engineer" ||
-        config.jobTitle === "Senior Software Engineer Intern" ||
-        config.jobTitle === "Software Developer" ||
-        config.jobTitle === "Software Developer Intern" ||
-        config.jobTitle === "Senior Software Developer" ||
-        config.jobTitle === "Senior Software Developer Intern" ||
-        config.jobTitle === "Full Stack Developer" ||
-        config.jobTitle === "Full Stack Developer Intern" ||
-        config.jobTitle === "Senior Full Stack Developer" ||
-        config.jobTitle === "Senior Full Stack Developer Intern" ||
-        config.jobTitle === "Software Developemnet Engineer"
-      ) {
-        industry = hardData.industry[0];
-        skills = hardData.skills[0];
-      } else if (
-        config.jobTitle === "Frontend Developer" ||
-        config.jobTitle === "Frontend Developer Intern" ||
-        config.jobTitle === "Senior Frontend Developer Intern" ||
-        config.jobTitle === "Senior Frontend Developer" ||
-        config.jobTitle === "Frontend Engineer" ||
-        config.jobTitle === "Frontend Engineer Intern" ||
-        config.jobTitle === "Senior Frontend Engineer" ||
-        config.jobTitle === "Senior Frontend Engineer Intern"
-      ) {
-        industry = hardData.industry[0];
-        skills = hardData.skills[1];
-      } else if (
-        config.jobTitle === "Backend Engineer" ||
-        config.jobTitle === "Backend Engineer Intern" ||
-        config.jobTitle === "Senior Backend Engineer" ||
-        config.jobTitle === "Senior Backend Engineer Intern" ||
-        config.jobTitle === "Backend Developer" ||
-        config.jobTitle === "Backend Developer Intern" ||
-        config.jobTitle === "Senior Backend Developer Intern" ||
-        config.jobTitle === "Senior Backend Developer"
-      ) {
-        industry = hardData.industry[0];
-        skills = hardData.skills[2];
-      } else if (
-        config.jobTitle === "DevOps Engineer" ||
-        config.jobTitle === "Senior DevOps Engineer" ||
-        config.jobTitle === "DevOps Engineer Intern" ||
-        config.jobTitle === "Senior DevOps Engineer Intern"
-      ) {
-        industry = hardData.industry[1];
-        skills = hardData.skills[3];
-      }
+      await initVariable(config)
 
       // Processing the email
-      await transporter.sendMail({
+      const info = await transporter.sendMail({
         from: process.env.FROM_EMAIL,
         to: config.hiringManagerEmail,
         subject: `Application for ${config.jobTitle} Position`,
@@ -130,6 +169,8 @@ export async function POST(request: Request) {
           },
         ],
       });
+
+      logIntoSheets(info, config)
     }
     return NextResponse.json(
       { message: "Emails sent successfully" },
