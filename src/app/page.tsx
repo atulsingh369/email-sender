@@ -4,9 +4,14 @@ import React, { useState } from 'react';
 import { useForm, useFieldArray, SubmitHandler } from 'react-hook-form';
 
 interface EmailConfig {
-  to: string;
-  subject: string;
-  text: string;
+  hiringManagerEmail: string;
+  jobTitle: string;
+  hiringManager: string;
+  companyName: string;
+  YOE: string;
+  industry1: string;
+  industry2: string;
+  skills: string;
 }
 
 interface EmailForm {
@@ -18,7 +23,7 @@ export default function Home() {
   const [status, setStatus] = useState<string>('');
   const { register, control, handleSubmit, formState: { errors } } = useForm<EmailForm>({
     defaultValues: {
-      emailConfigs: [{ to: '', subject: '', text: '' }],
+      emailConfigs: [{ hiringManagerEmail: '', jobTitle: '', hiringManager: '', companyName: '', YOE: '', industry1: '', industry2: '', skills: '' }],
     },
   });
   const { fields, append, remove } = useFieldArray({
@@ -56,32 +61,72 @@ export default function Home() {
   };
 
   return (
-  <div className="container mx-auto p-4">
+    <div className="container mx-auto p-4">
       <h1 className="text-3xl font-bold mb-6 text-center">Mail Wave</h1>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {fields.map((field, index) => (
-          <div key={field.id} className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
-            <input
-              {...register(`emailConfigs.${index}.to`, { required: 'To address is required' })}
-              placeholder="To"
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-4"
-            />
-            {errors.emailConfigs?.[index]?.to && <p className="text-red-500 text-xs italic">{errors.emailConfigs[index]?.to?.message}</p>}
-            
-            <input
-              {...register(`emailConfigs.${index}.subject`, { required: 'Subject is required' })}
-              placeholder="Subject"
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-4"
-            />
-            {errors.emailConfigs?.[index]?.subject && <p className="text-red-500 text-xs italic">{errors.emailConfigs[index]?.subject?.message}</p>}
-            
-            <textarea
-              {...register(`emailConfigs.${index}.text`, { required: 'Email content is required' })}
-              placeholder="Email content"
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-4"
-            />
-            {errors.emailConfigs?.[index]?.text && <p className="text-red-500 text-xs italic">{errors.emailConfigs[index]?.text?.message}</p>}
-            
+          <div key={field.id} className="bg-transparent border border-gray-300 shadow-md rounded px-8 pt-6 pb-8 mb-4">
+            <div className='flex flex-row justify-between items-center w-full'>
+              <div className='flex flex-col justify-center items-center w-1/3'>
+                <input
+                  {...register(`emailConfigs.${index}.hiringManagerEmail`, { required: 'Hiring Manager address is required' })}
+                  placeholder="Hiring Manager Address"
+                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-4"
+                />
+                {errors.emailConfigs?.[index]?.hiringManagerEmail && <p className="text-red-500 text-xs italic">{errors.emailConfigs[index]?.hiringManagerEmail?.message}</p>}
+
+                <input
+                  {...register(`emailConfigs.${index}.jobTitle`, { required: 'Job Title is required' })}
+                  placeholder="Job Title"
+                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-4"
+                />
+                {errors.emailConfigs?.[index]?.jobTitle && <p className="text-red-500 text-xs italic">{errors.emailConfigs[index]?.jobTitle?.message}</p>}
+
+                <input
+                  {...register(`emailConfigs.${index}.hiringManager`, { required: 'Hiring Manager is required' })}
+                  placeholder="Hiring Manager Name"
+                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-4"
+                />
+                {errors.emailConfigs?.[index]?.hiringManager && <p className="text-red-500 text-xs italic">{errors.emailConfigs[index]?.hiringManager?.message}</p>}
+
+                <input
+                  {...register(`emailConfigs.${index}.companyName`, { required: 'Company Name is required' })}
+                  placeholder="Company Name"
+                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-4"
+                />
+                {errors.emailConfigs?.[index]?.companyName && <p className="text-red-500 text-xs italic">{errors.emailConfigs[index]?.companyName?.message}</p>}
+              </div>
+
+              <div className='flex flex-col justify-center items-center w-1/3'>
+                <input
+                  {...register(`emailConfigs.${index}.YOE`, { required: 'YOE is required' })}
+                  placeholder="YOE"
+                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-4"
+                />
+                {errors.emailConfigs?.[index]?.YOE && <p className="text-red-500 text-xs italic">{errors.emailConfigs[index]?.YOE?.message}</p>}
+
+                <input
+                  {...register(`emailConfigs.${index}.industry1`, { required: 'Industry 1 is required' })}
+                  placeholder="Industry 1"
+                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-4"
+                />
+                {errors.emailConfigs?.[index]?.industry1 && <p className="text-red-500 text-xs italic">{errors.emailConfigs[index]?.industry1?.message}</p>}
+
+                <input
+                  {...register(`emailConfigs.${index}.industry2`, { required: 'Industry 2 is required' })}
+                  placeholder="Industry 2"
+                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-4"
+                />
+                {errors.emailConfigs?.[index]?.industry2 && <p className="text-red-500 text-xs italic">{errors.emailConfigs[index]?.industry2?.message}</p>}
+
+                <input
+                  {...register(`emailConfigs.${index}.skills`, { required: 'Skills is required' })}
+                  placeholder="Skills"
+                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-4"
+                />
+                {errors.emailConfigs?.[index]?.skills && <p className="text-red-500 text-xs italic">{errors.emailConfigs[index]?.skills?.message}</p>}
+              </div>
+            </div>
             <button
               type="button"
               onClick={() => remove(index)}
@@ -91,11 +136,11 @@ export default function Home() {
             </button>
           </div>
         ))}
-        
+
         <div className="flex justify-between">
           <button
             type="button"
-            onClick={() => append({ to: '', subject: '', text: '' })}
+            onClick={() => append({ hiringManagerEmail: '', jobTitle: '', hiringManager: '', companyName: '', YOE: '', industry1: '', industry2: '', skills: '' })}
             className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
           >
             Add Email
