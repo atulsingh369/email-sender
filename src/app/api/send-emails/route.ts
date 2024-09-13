@@ -3,7 +3,8 @@ import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 import path from "path";
 import { promises as fs } from "fs";
-import { google } from 'googleapis';
+import { google, sheets_v4 } from "googleapis";
+import { OAuth2Client } from "google-auth-library";
 
 interface EmailConfig {
   hiringManagerEmail: string;
@@ -11,6 +12,18 @@ interface EmailConfig {
   hiringManager: string;
   companyName: string;
 }
+
+const gsheetsJSON = path.join(
+  process.cwd(),
+  "src/app/emailsender-gsheets.json"
+);
+
+// Set up OAuth2 client (you'll need to configure this with your credentials)
+const oauth2Client = new OAuth2Client(
+  "117655714683-atrue7lspuuldejat36t0951ivp3h9io.apps.googleusercontent.com",
+  "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",
+  "https://9000-idx-email-sender-1726149732430.cluster-bec2e4635ng44w7ed22sa22hes.cloudworkstations.dev/"
+);
 
 const hardData = {
   industry: ["Software Developement & Engineering", "DevOps"],
@@ -21,6 +34,7 @@ const hardData = {
     "Docker & Kubernetes, also using GitHub Fastlane to implement CI/CD",
   ],
 };
+
 var industry: string = hardData.industry[0],
   skills: string = hardData.skills[0];
 
@@ -93,22 +107,148 @@ const initVariable = async (config: EmailConfig) => {
   }
 };
 
-async function logIntoSheets(info: nodemailer.SentMessageInfo, config: EmailConfig) {
-  const auth = new google.auth.GoogleAuth({
-    keyFile: './path/to/your/service-account-key.json',
-    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-  });
+// Set up the Gmail API client
+oauth2Client.setCredentials({
+  refresh_token:
+    "1//04fYHFbEdQJPpCgYIARAAGAQSNwF-L9IrHWDFfntU3BEQkIDdg8iH4FG5tm7GVE0veAqmxbvohmYwwX6UX5oIQKFG0bxTrxlCY_o",
+});
+const gmailAPIClient = google.gmail({ version: "v1", auth: oauth2Client });
 
-  const sheets = google.sheets({ version: 'v4', auth });
+// async function checkForReplies(sent_message_id) {
+//   try {
+//     // Fetch the sent message to get its thread ID
+//     const sent_message = await gmail.users.messages.get({
+//       userId: 'me',
+//       id: sent_message_id,
+//     });
+//     const threadId = sent_message.data.threadId;
 
-  const values = [[new Date().toISOString(), config.hiringManagerEmail, config.jobTitle, config.companyName, info.messageId]];
+//     // Fetch all messages in the thread
+//     const thread = await gmail.users.threads.get({
+//       userId: 'me',
+//       id: threadId,
+//     });
 
-  // await sheets.spreadsheets.values.append({
-  //   spreadsheetId: process.env.GOOGLE_SHEET_ID,
-  //   range: 'Sheet1!A:D',
-  //   valueInputOption: 'USER_ENTERED',
-  //   resource: { values },
+//     // Check if there are any messages in the thread other than the original sent message
+//     if (thread.data.messages.length > 1) {
+//       // Find the most recent message that isn't the original sent message
+//       const reply = thread.data.messages
+//         .filter(msg => msg.id !== sent_message_id)
+//         .sort((a, b) => b.internalDate - a.internalDate)[0];
+
+//       if (reply) {
+//         return {
+//           hasReply: true,
+//           replyId: reply.id,
+//           replyFrom: reply.payload.headers.find(h => h.name === 'From').value,
+//           replyDate: new Date(parseInt(reply.internalDate)).toISOString(),
+//         };
+//       }
+//     }
+
+//     return { hasReply: false };
+//   } catch (error) {
+//     console.error('Error checking for replies:', error);
+//     return { hasReply: false, error: error.message };
+//   }
+// }
+
+async function constructGmailLink(messageId: string): Promise<string> {
+  // const auth = new google.auth.GoogleAuth({
+  //   keyFile: gsheetsJSON,
+  //   scopes: ["https://www.googleapis.com/auth/gmail.readonly"],
   // });
+  // const gmail = google.gmail({ version: "v1", auth });
+
+  let threadId: any = "";
+
+  try {
+    // const response = await gmailAPIClient.users.messages.get({
+    //   userId: "me",
+    //   id: messageId.replace(/[<>]/g, ""),
+    // });
+
+    // const threadId = response.data.threadId;
+
+    // const res = await gmailAPIClient.users.messages.list({
+    //   userId: "me",
+    //   q: `rfc822msgid:${messageId.replace(/[<>]/g, "")}`, // Search for message by Message-ID
+    // });
+
+    // if (res.data.messages && res.data.messages.length > 0) {
+    //   const message = res.data.messages[0];
+    //   if (message.threadId) threadId = message.threadId;
+    // }
+
+    if (threadId !== "")
+      return `https://mail.google.com/mail/u/0/#sent/${threadId}`;
+    // else {
+      // Remove any angle brackets from the message ID
+      const cleanMessageId = messageId.replace(/[<>]/g, "");
+      // Construct the Gmail search query
+      const searchQuery = `rfc822msgid:${cleanMessageId}`;
+      // Encode the search query, but replace the encoded '@' back to '@'
+      const encodedQuery = encodeURIComponent(searchQuery).replace(/%40/g, "@");
+      // Construct the final Gmail link
+      return `https://mail.google.com/mail/u/0/#search/${encodedQuery}`;
+    // }
+    // return threadId!?.toString();
+  } catch (error) {
+    console.log(error);
+    return "";
+  }
+  // return gLink;
+}
+
+async function logIntoSheets(
+  messageId: string,
+  gmailLink: string,
+  config: EmailConfig
+) {
+  try {
+    const auth = new google.auth.GoogleAuth({
+      keyFile: gsheetsJSON,
+      scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+    });
+
+    const sheets = google.sheets({ version: "v4", auth });
+
+    const date = new Date();
+    date.setHours(date.getHours() + 5);
+    date.setMinutes(date.getMinutes() + 30);
+    const formatter = new Intl.DateTimeFormat("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+    const formatterTime = new Intl.DateTimeFormat("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+    const formattedTime = formatterTime.format(date);
+    const formattedDate = formatter.format(date);
+
+    const values = [
+      [
+        `${formattedDate} - ${formattedTime}`,
+        config.hiringManagerEmail,
+        config.jobTitle,
+        config.companyName,
+        gmailLink,
+        messageId,
+      ],
+    ];
+
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: "Sheet1!A:F",
+      valueInputOption: "USER_ENTERED",
+      requestBody: { values },
+    } as sheets_v4.Params$Resource$Spreadsheets$Values$Append);
+  } catch (error) {
+    console.error(error);
+  }
 }
 
 export async function POST(request: Request) {
@@ -150,7 +290,7 @@ export async function POST(request: Request) {
   try {
     for (const config of emailConfigs) {
       // Proccessing other values like industry and skills
-      await initVariable(config)
+      await initVariable(config);
 
       // Processing the email
       const info = await transporter.sendMail({
@@ -170,16 +310,20 @@ export async function POST(request: Request) {
         ],
       });
 
-      logIntoSheets(info, config)
+      // Proccessing GMail Link
+      await constructGmailLink(info.messageId).then(async (gmailLink) => {
+        // Processing Logging in Sheets
+        await logIntoSheets(info.messageId, gmailLink, config);
+      });
     }
     return NextResponse.json(
       { message: "Emails sent successfully" },
       { status: 200 }
     );
   } catch (error) {
-    console.error("Failed to send emails:", error);
+    // console.error("Failed to send emails:", error);
     return NextResponse.json(
-      { message: "Failed to send emails" },
+      { message: "Failed to send emails", error: error },
       { status: 500 }
     );
   }
