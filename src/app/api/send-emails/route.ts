@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 import path from "path";
 import { promises as fs } from "fs";
-import { google, sheets_v4 } from "googleapis";
+import { google, sheets_v4, gmail_v1 } from "googleapis";
 import { OAuth2Client } from "google-auth-library";
+import { NextResponse } from "next/server";
 
 interface EmailConfig {
   hiringManagerEmail: string;
@@ -18,12 +18,18 @@ const gsheetsJSON = path.join(
   "src/app/emailsender-gsheets.json"
 );
 
+const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+const REDIRECT_URI = "https://developers.google.com/oauthplayground";
+const REFRESH_TOKEN = process.env.GOOGLE_REFRESH_TOKEN;
+
 // Set up OAuth2 client (you'll need to configure this with your credentials)
-const oauth2Client = new OAuth2Client(
-  "117655714683-atrue7lspuuldejat36t0951ivp3h9io.apps.googleusercontent.com",
-  "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",
-  "https://9000-idx-email-sender-1726149732430.cluster-bec2e4635ng44w7ed22sa22hes.cloudworkstations.dev/"
+const oauth2Client = new google.auth.OAuth2(
+  CLIENT_ID,
+  CLIENT_SECRET,
+  REDIRECT_URI
 );
+oauth2Client.setCredentials({ refresh_token: REFRESH_TOKEN });
 
 const hardData = {
   industry: ["Software Developement & Engineering", "DevOps"],
@@ -107,12 +113,10 @@ const initVariable = async (config: EmailConfig) => {
   }
 };
 
-// Set up the Gmail API client
-oauth2Client.setCredentials({
-  refresh_token:
-    "1//04fYHFbEdQJPpCgYIARAAGAQSNwF-L9IrHWDFfntU3BEQkIDdg8iH4FG5tm7GVE0veAqmxbvohmYwwX6UX5oIQKFG0bxTrxlCY_o",
-});
-const gmailAPIClient = google.gmail({ version: "v1", auth: oauth2Client });
+async function getAccessToken() {
+  const { token } = await oauth2Client.getAccessToken();
+  return token;
+}
 
 // async function checkForReplies(sent_message_id) {
 //   try {
@@ -153,51 +157,42 @@ const gmailAPIClient = google.gmail({ version: "v1", auth: oauth2Client });
 //   }
 // }
 
-async function constructGmailLink(messageId: string): Promise<string> {
-  // const auth = new google.auth.GoogleAuth({
-  //   keyFile: gsheetsJSON,
-  //   scopes: ["https://www.googleapis.com/auth/gmail.readonly"],
-  // });
-  // const gmail = google.gmail({ version: "v1", auth });
+async function constructGmailLink(
+  to: string,
+  jobTitle: string
+): Promise<string> {
+  const accessToken = await getAccessToken();
+  // Get the Gmail thread ID
+  // Get the Gmail thread ID
+  const gmail: gmail_v1.Gmail = google.gmail({
+    version: "v1",
+    auth: oauth2Client,
+  });
 
-  let threadId: any = "";
+  let gLink: string = "N/A";
 
-  try {
-    // const response = await gmailAPIClient.users.messages.get({
-    //   userId: "me",
-    //   id: messageId.replace(/[<>]/g, ""),
-    // });
-
-    // const threadId = response.data.threadId;
-
-    // const res = await gmailAPIClient.users.messages.list({
-    //   userId: "me",
-    //   q: `rfc822msgid:${messageId.replace(/[<>]/g, "")}`, // Search for message by Message-ID
-    // });
-
-    // if (res.data.messages && res.data.messages.length > 0) {
-    //   const message = res.data.messages[0];
-    //   if (message.threadId) threadId = message.threadId;
-    // }
-
-    if (threadId !== "")
-      return `https://mail.google.com/mail/u/0/#sent/${threadId}`;
-    // else {
-      // Remove any angle brackets from the message ID
-      const cleanMessageId = messageId.replace(/[<>]/g, "");
-      // Construct the Gmail search query
-      const searchQuery = `rfc822msgid:${cleanMessageId}`;
-      // Encode the search query, but replace the encoded '@' back to '@'
-      const encodedQuery = encodeURIComponent(searchQuery).replace(/%40/g, "@");
-      // Construct the final Gmail link
-      return `https://mail.google.com/mail/u/0/#search/${encodedQuery}`;
-    // }
-    // return threadId!?.toString();
-  } catch (error) {
-    console.log(error);
-    return "";
+  // Search for the message using query parameters
+  const searchResponse = await gmail.users.messages.list({
+    userId: "me",
+    q: `to:${to} subject:Application for ${jobTitle} Position`,
+    maxResults: 1,
+  });
+  if (searchResponse.data.messages && searchResponse.data.messages.length > 0) {
+    const messageId = searchResponse.data.messages[0].id;
+    if (messageId)
+      await gmail.users.messages
+        .get({
+          userId: "me",
+          id: messageId,
+        })
+        .then(async (message) => {
+          if (message.data.threadId) {
+            const threadId = message.data.threadId;
+            gLink = `https://mail.google.com/mail/u/0/#inbox/${threadId}`;
+          }
+        });
   }
-  // return gLink;
+  return gLink;
 }
 
 async function logIntoSheets(
@@ -310,11 +305,16 @@ export async function POST(request: Request) {
         ],
       });
 
+      // Wait for a short period to ensure the message is available in Gmail
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
       // Proccessing GMail Link
-      await constructGmailLink(info.messageId).then(async (gmailLink) => {
-        // Processing Logging in Sheets
-        await logIntoSheets(info.messageId, gmailLink, config);
-      });
+      await constructGmailLink(config.hiringManagerEmail, config.jobTitle).then(
+        async (gmailLink) => {
+          // Processing Logging in Sheets
+          await logIntoSheets(info.messageId, gmailLink, config);
+        }
+      );
     }
     return NextResponse.json(
       { message: "Emails sent successfully" },
