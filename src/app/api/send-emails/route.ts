@@ -3,7 +3,6 @@ import dotenv from "dotenv";
 import path from "path";
 import { promises as fs } from "fs";
 import { google, sheets_v4, gmail_v1 } from "googleapis";
-import { OAuth2Client } from "google-auth-library";
 import { NextResponse } from "next/server";
 
 interface EmailConfig {
@@ -11,6 +10,11 @@ interface EmailConfig {
   jobTitle: string;
   hiringManager: string;
   companyName: string;
+}
+
+interface IDs {
+  gmailLink: string;
+  threadId: string;
 }
 
 const gsheetsJSON = path.join(
@@ -118,49 +122,7 @@ async function getAccessToken() {
   return token;
 }
 
-// async function checkForReplies(sent_message_id) {
-//   try {
-//     // Fetch the sent message to get its thread ID
-//     const sent_message = await gmail.users.messages.get({
-//       userId: 'me',
-//       id: sent_message_id,
-//     });
-//     const threadId = sent_message.data.threadId;
-
-//     // Fetch all messages in the thread
-//     const thread = await gmail.users.threads.get({
-//       userId: 'me',
-//       id: threadId,
-//     });
-
-//     // Check if there are any messages in the thread other than the original sent message
-//     if (thread.data.messages.length > 1) {
-//       // Find the most recent message that isn't the original sent message
-//       const reply = thread.data.messages
-//         .filter(msg => msg.id !== sent_message_id)
-//         .sort((a, b) => b.internalDate - a.internalDate)[0];
-
-//       if (reply) {
-//         return {
-//           hasReply: true,
-//           replyId: reply.id,
-//           replyFrom: reply.payload.headers.find(h => h.name === 'From').value,
-//           replyDate: new Date(parseInt(reply.internalDate)).toISOString(),
-//         };
-//       }
-//     }
-
-//     return { hasReply: false };
-//   } catch (error) {
-//     console.error('Error checking for replies:', error);
-//     return { hasReply: false, error: error.message };
-//   }
-// }
-
-async function constructGmailLink(
-  to: string,
-  jobTitle: string
-): Promise<string> {
+async function constructGmailLink(to: string, jobTitle: string): Promise<IDs> {
   const accessToken = await getAccessToken();
   // Get the Gmail thread ID
   // Get the Gmail thread ID
@@ -170,6 +132,7 @@ async function constructGmailLink(
   });
 
   let gLink: string = "N/A";
+  let theradId: string = "N/A";
 
   // Search for the message using query parameters
   const searchResponse = await gmail.users.messages.list({
@@ -188,16 +151,17 @@ async function constructGmailLink(
         .then(async (message) => {
           if (message.data.threadId) {
             const threadId = message.data.threadId;
+            theradId = message.data.threadId;
             gLink = `https://mail.google.com/mail/u/0/#inbox/${threadId}`;
           }
         });
   }
-  return gLink;
+  return { gmailLink: gLink, threadId: theradId };
 }
 
 async function logIntoSheets(
-  messageId: string,
   gmailLink: string,
+  threadId: string,
   config: EmailConfig
 ) {
   try {
@@ -216,22 +180,21 @@ async function logIntoSheets(
       month: "2-digit",
       year: "numeric",
     });
-    const formatterTime = new Intl.DateTimeFormat("en-GB", {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
-    const formattedTime = formatterTime.format(date);
     const formattedDate = formatter.format(date);
+
+    const timeString = date.toLocaleTimeString("en-US", {
+      timeStyle: "short",
+      hour12: true,
+    });
 
     const values = [
       [
-        `${formattedDate} - ${formattedTime}`,
+        `${formattedDate} - ${timeString}`,
         config.hiringManagerEmail,
         config.jobTitle,
         config.companyName,
         gmailLink,
-        messageId,
+        threadId,
       ],
     ];
 
@@ -310,9 +273,9 @@ export async function POST(request: Request) {
 
       // Proccessing GMail Link
       await constructGmailLink(config.hiringManagerEmail, config.jobTitle).then(
-        async (gmailLink) => {
+        async (links) => {
           // Processing Logging in Sheets
-          await logIntoSheets(info.messageId, gmailLink, config);
+          await logIntoSheets(links.gmailLink, links.threadId, config);
         }
       );
     }

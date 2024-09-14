@@ -15,7 +15,7 @@ interface EmailForm {
 }
 
 export default function Home() {
-  const [status, setStatus] = useState<string>("");
+  const [emailStatus, setEmailStatus] = useState<string>("");
   const {
     register,
     control,
@@ -39,7 +39,7 @@ export default function Home() {
   });
 
   const onSubmit: SubmitHandler<EmailForm> = async (data) => {
-    setStatus("Sending...");
+    setEmailStatus("Sending...");
     try {
       const response = await fetch("/api/send-emails", {
         method: "POST",
@@ -52,18 +52,49 @@ export default function Home() {
         let errorJson;
         try {
           errorJson = JSON.parse(errorText);
-          setStatus(`Failed to send emails: ${errorJson.message}`);
+          setEmailStatus(`Failed to send emails: ${errorJson.message}`);
         } catch (parseError) {
           console.error("Error parsing response:", errorText);
-          setStatus(`Failed to send emails: ${response.statusText}`);
+          setEmailStatus(`Failed to send emails: ${response.statusText}`);
         }
       } else {
         const result = await response.json();
-        setStatus(result.message || "Emails sent successfully!");
+        setEmailStatus(result.message || "Emails sent successfully!");
       }
     } catch (error) {
       console.error("Error sending emails:", error);
-      setStatus(
+      setEmailStatus(
+        `An error occurred: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    }
+  };
+
+  const checkReply = async () => {
+    setEmailStatus("Checking...");
+    try {
+      const response = await fetch("/api/check-replies", {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorJson;
+        try {
+          errorJson = JSON.parse(errorText);
+          setEmailStatus(`Failed check replies: ${errorJson.message}`);
+        } catch (parseError) {
+          console.error("Error parsing response:", errorText);
+          setEmailStatus(`Failed check replies: ${response.statusText}`);
+        }
+      } else {
+        const result = await response.json();
+        setEmailStatus(result.message || "Replies Checked Succesfully");
+      }
+    } catch (error) {
+      console.error("Error sending emails:", error);
+      setEmailStatus(
         `An error occurred: ${
           error instanceof Error ? error.message : "Unknown error"
         }`
@@ -80,18 +111,18 @@ export default function Home() {
             key={field.id}
             className="bg-transparent border border-gray-300 shadow-md rounded px-8 pt-6 pb-8 mb-4"
           >
-              <input
-                {...register(`emailConfigs.${index}.hiringManagerEmail`, {
-                  required: "Hiring Manager address is required",
-                })}
-                placeholder="Hiring Manager Address"
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-4"
-              />
-              {errors.emailConfigs?.[index]?.hiringManagerEmail && (
-                <p className="text-red-500 text-xs italic">
-                  {errors.emailConfigs[index]?.hiringManagerEmail?.message}
-                </p>
-              )}
+            <input
+              {...register(`emailConfigs.${index}.hiringManagerEmail`, {
+                required: "Hiring Manager address is required",
+              })}
+              placeholder="Hiring Manager Address"
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-4"
+            />
+            {errors.emailConfigs?.[index]?.hiringManagerEmail && (
+              <p className="text-red-500 text-xs italic">
+                {errors.emailConfigs[index]?.hiringManagerEmail?.message}
+              </p>
+            )}
 
             <div className="flex flex-row justify-between items-center w-full">
               <input
@@ -159,6 +190,13 @@ export default function Home() {
             Add Email
           </button>
           <button
+            type="button"
+            onClick={checkReply}
+            className="bg-amber-500 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+          >
+            Check Replies
+          </button>
+          <button
             type="submit"
             className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
           >
@@ -166,7 +204,9 @@ export default function Home() {
           </button>
         </div>
       </form>
-      {status && <p className="mt-4 text-center font-bold text-lg">{status}</p>}
+      {emailStatus && (
+        <p className="mt-4 text-center font-bold text-lg">{emailStatus}</p>
+      )}
     </div>
   );
 }
