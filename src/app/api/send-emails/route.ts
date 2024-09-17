@@ -271,7 +271,7 @@ export async function POST(request: Request) {
       const info = await transporter.sendMail({
         from: process.env.FROM_EMAIL,
         to: config.hiringManagerEmail,
-        subject: `Application for ${config.jobTitle} Position`,
+        subject: `Application for ${config.jobTitle} Position in ${config.companyName}`,
         text: textContent(
           config.hiringManager,
           config.jobTitle,
