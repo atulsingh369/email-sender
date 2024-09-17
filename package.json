@@ -9,16 +9,22 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "axios": "^1.7.7",
+    "cheerio": "^1.0.0",
     "dotenv": "^16.4.5",
     "google-auth-library": "^9.14.1",
     "googleapis": "^144.0.0",
+    "limiter": "^2.1.0",
+    "lodash": "^4.17.21",
     "next": "14.2.9",
     "nodemailer": "^6.9.15",
+    "puppeteer": "^23.3.0",
     "react": "^18",
     "react-dom": "^18",
     "react-hook-form": "^7.53.0"
   },
   "devDependencies": {
+    "@types/lodash": "^4.17.7",
     "@types/node": "^20.16.5",
     "@types/nodemailer": "^6.4.15",
     "@types/react": "^18",

@@ -117,6 +117,21 @@ const initVariable = async (config: EmailConfig) => {
   }
 };
 
+const textContent = (
+  hiringManager: string,
+  jobTitle: string,
+  industry: string,
+  skills: string,
+  companyName: string,
+  index: number
+): string => {
+  const text1: string = `Hi ${hiringManager},\n\nI'm eager to become your next ${jobTitle}!\n\nI recently came across the ${jobTitle} opening at ${companyName} on LinkedIn and felt compelled to reach out. With my ${process.env.YOE} years of experience in ${industry}, coupled with my skills in ${skills}, I beleive I'd be an excellent fit for your team. \n\nPlease find my resume and portfolio attached for your review. I'm really looking forward to discusssing how I can bring fresh ideas to your team, particularly in ${industry}.\n\n Excited about the possibility of working together!\n\n\Best, \n\n\n\nAtul Kumar Singh\nSoftware Developer\nhttps://www.linkedin.com/in/atulsingh369\n\nVisit my LinkTree\nhttps://linktr.ee/atulsingh369`;
+  const text2: string = `Dear ${hiringManager},\n\nI hope this message finds you well. I am writing to express my interest in the ${jobTitle} position at ${companyName} that I discovered through linkedin.\n\nWith ${process.env.YOE} years of experience in ${industry}, I am confident in my ability to contribute effectively to your team and believe my skills in ${skills} align well with the requirements of the role.\n\nThank you for considering my application. I have attached my resume for your review. I would welcome the opportunity to discuss how my background, skills, and passion for ${industry} make me a strong candidate for this position.\n\nI look forward to hearing from you soon.\n\nBest regards,\n\nAtul Kumar Singh\nSoftware Developer\nhttps://www.linkedin.com/in/atulsingh369\n\nVisit my LinkTree\nhttps://linktr.ee/atulsingh369`;
+
+  const textSamples: string[] = [text1, text2];
+  return textSamples[index];
+};
+
 async function getAccessToken() {
   const { token } = await oauth2Client.getAccessToken();
   return token;
@@ -211,8 +226,10 @@ async function logIntoSheets(
 
 export async function POST(request: Request) {
   dotenv.config({ path: ".env.local" });
-  const { emailConfigs }: { emailConfigs: EmailConfig[] } =
-    await request.json();
+  const {
+    emailConfigs,
+    index,
+  }: { emailConfigs: EmailConfig[]; index: number } = await request.json();
 
   if (!Array.isArray(emailConfigs) || emailConfigs.length === 0) {
     return NextResponse.json(
@@ -255,7 +272,14 @@ export async function POST(request: Request) {
         from: process.env.FROM_EMAIL,
         to: config.hiringManagerEmail,
         subject: `Application for ${config.jobTitle} Position`,
-        text: `Dear ${config.hiringManager},\n\nI hope this message finds you well. I am writing to express my interest in the ${config.jobTitle} position at ${config.companyName} that I discovered through linkedin.\n\nWith ${process.env.YOE} years of experience in ${industry}, I am confident in my ability to contribute effectively to your team and believe my skills in ${skills} align well with the requirements of the role.\n\nThank you for considering my application. I have attached my resume for your review. I would welcome the opportunity to discuss how my background, skills, and passion for ${industry} make me a strong candidate for this position.\n\nI look forward to hearing from you soon.\n\nBest regards,\n\nAtul Kumar Singh\nSoftware Developer\nhttps://www.linkedin.com/in/atulsingh369\n\nVisit my LinkTree\nhttps://linktr.ee/atulsingh369`,
+        text: textContent(
+          config.hiringManager,
+          config.jobTitle,
+          industry,
+          skills,
+          config.companyName,
+          index
+        ),
         attachments: [
           {
             filename: path.basename(resumePath),

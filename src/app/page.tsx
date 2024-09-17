@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useForm, useFieldArray, SubmitHandler } from "react-hook-form";
 
 interface EmailConfig {
@@ -15,6 +16,7 @@ interface EmailForm {
 }
 
 export default function Home() {
+  const router = useRouter();
   const [emailStatus, setEmailStatus] = useState<string>("");
   const {
     register,
@@ -33,6 +35,7 @@ export default function Home() {
       ],
     },
   });
+
   const { fields, append, remove } = useFieldArray({
     control,
     name: "emailConfigs",
@@ -103,110 +106,119 @@ export default function Home() {
   };
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6 text-center">Mail Wave</h1>
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        {fields.map((field, index) => (
-          <div
-            key={field.id}
-            className="bg-transparent border border-gray-300 shadow-md rounded px-8 pt-6 pb-8 mb-4"
-          >
-            <input
-              {...register(`emailConfigs.${index}.hiringManagerEmail`, {
-                required: "Hiring Manager address is required",
-              })}
-              placeholder="Hiring Manager Address"
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-4"
-            />
-            {errors.emailConfigs?.[index]?.hiringManagerEmail && (
-              <p className="text-red-500 text-xs italic">
-                {errors.emailConfigs[index]?.hiringManagerEmail?.message}
-              </p>
-            )}
-
-            <div className="flex flex-row justify-between items-center w-full">
+    <>
+      <div className="container mx-auto p-4">
+        <h1 className="text-3xl font-bold mb-6 text-center">Mail Wave</h1>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          {fields.map((field, index) => (
+            <div
+              key={field.id}
+              className="bg-transparent border border-gray-300 shadow-md rounded px-8 pt-6 pb-8 mb-4"
+            >
               <input
-                {...register(`emailConfigs.${index}.jobTitle`, {
-                  required: "Job Title is required",
+                {...register(`emailConfigs.${index}.hiringManagerEmail`, {
+                  required: "Hiring Manager address is required",
                 })}
-                placeholder="Job Title"
-                className="shadow appearance-none border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-4"
+                placeholder="Hiring Manager Address"
+                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-4"
               />
-              {errors.emailConfigs?.[index]?.jobTitle && (
+              {errors.emailConfigs?.[index]?.hiringManagerEmail && (
                 <p className="text-red-500 text-xs italic">
-                  {errors.emailConfigs[index]?.jobTitle?.message}
+                  {errors.emailConfigs[index]?.hiringManagerEmail?.message}
                 </p>
               )}
 
-              <input
-                {...register(`emailConfigs.${index}.hiringManager`, {
-                  required: "Hiring Manager is required",
-                })}
-                placeholder="Hiring Manager Name"
-                className="shadow appearance-none border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-4"
-              />
-              {errors.emailConfigs?.[index]?.hiringManager && (
-                <p className="text-red-500 text-xs italic">
-                  {errors.emailConfigs[index]?.hiringManager?.message}
-                </p>
-              )}
+              <div className="flex flex-row justify-between items-center w-full">
+                <input
+                  {...register(`emailConfigs.${index}.jobTitle`, {
+                    required: "Job Title is required",
+                  })}
+                  placeholder="Job Title"
+                  className="shadow appearance-none border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-4"
+                />
+                {errors.emailConfigs?.[index]?.jobTitle && (
+                  <p className="text-red-500 text-xs italic">
+                    {errors.emailConfigs[index]?.jobTitle?.message}
+                  </p>
+                )}
 
-              <input
-                {...register(`emailConfigs.${index}.companyName`, {
-                  required: "Company Name is required",
-                })}
-                placeholder="Company Name"
-                className="shadow appearance-none border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-4"
-              />
-              {errors.emailConfigs?.[index]?.companyName && (
-                <p className="text-red-500 text-xs italic">
-                  {errors.emailConfigs[index]?.companyName?.message}
-                </p>
-              )}
+                <input
+                  {...register(`emailConfigs.${index}.hiringManager`, {
+                    required: "Hiring Manager is required",
+                  })}
+                  placeholder="Hiring Manager Name"
+                  className="shadow appearance-none border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-4"
+                />
+                {errors.emailConfigs?.[index]?.hiringManager && (
+                  <p className="text-red-500 text-xs italic">
+                    {errors.emailConfigs[index]?.hiringManager?.message}
+                  </p>
+                )}
+
+                <input
+                  {...register(`emailConfigs.${index}.companyName`, {
+                    required: "Company Name is required",
+                  })}
+                  placeholder="Company Name"
+                  className="shadow appearance-none border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-4"
+                />
+                {errors.emailConfigs?.[index]?.companyName && (
+                  <p className="text-red-500 text-xs italic">
+                    {errors.emailConfigs[index]?.companyName?.message}
+                  </p>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => remove(index)}
+                className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+              >
+                Remove
+              </button>
             </div>
+          ))}
+
+          <div className="flex justify-between">
             <button
               type="button"
-              onClick={() => remove(index)}
-              className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+              onClick={() =>
+                append({
+                  hiringManagerEmail: "",
+                  jobTitle: "",
+                  hiringManager: "",
+                  companyName: "",
+                })
+              }
+              className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
             >
-              Remove
+              Add Email
+            </button>
+            <button
+              type="button"
+              onClick={checkReply}
+              className="bg-amber-500 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            >
+              Check Replies
+            </button>
+            <button
+              type="submit"
+              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            >
+              Send Emails
             </button>
           </div>
-        ))}
-
-        <div className="flex justify-between">
-          <button
-            type="button"
-            onClick={() =>
-              append({
-                hiringManagerEmail: "",
-                jobTitle: "",
-                hiringManager: "",
-                companyName: "",
-              })
-            }
-            className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-          >
-            Add Email
-          </button>
-          <button
-            type="button"
-            onClick={checkReply}
-            className="bg-amber-500 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-          >
-            Check Replies
-          </button>
-          <button
-            type="submit"
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-          >
-            Send Emails
-          </button>
-        </div>
-      </form>
-      {emailStatus && (
-        <p className="mt-4 text-center font-bold text-lg">{emailStatus}</p>
-      )}
-    </div>
+        </form>
+        {emailStatus && (
+          <p className="mt-4 text-center font-bold text-lg">{emailStatus}</p>
+        )}
+        <button
+          type="button"
+          onClick={() => router.push("/search-jobs")}
+          className="bg-fuchsia-500 hover:bg-fuchsia-700 text-white font-bold py-2 px-4 mx-auto my-5 rounded focus:outline-none focus:shadow-outline"
+        >
+          Go to Search Job
+        </button>
+      </div>
+    </>
   );
 }
