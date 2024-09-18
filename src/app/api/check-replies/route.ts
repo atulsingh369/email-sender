@@ -15,8 +15,9 @@ var isDuplicate: boolean = false;
 interface EmailConfig {
   dateChecked?: string;
   dateSent: string;
+  name?: string;
   to: string;
-  jobTitle: string;
+  jobTitle?: string;
   companyName: string;
   gmailLink: string;
   threadId: string;
@@ -52,11 +53,14 @@ const gmail: gmail_v1.Gmail = google.gmail({
   auth: oauth2Client,
 });
 
-async function logIntoSheets(reply: EmailConfig) {
+async function logIntoSheets(reply: EmailConfig, isReferral: boolean) {
   try {
     isDuplicate = false;
     noReplies = 0;
-    const dataFromSheet2: EmailConfig[] = await readSentEmailsFromSheets(false);
+    const dataFromSheet2: EmailConfig[] = await readSentEmailsFromSheets(
+      false,
+      isReferral
+    );
     dataFromSheet2.map((data) => {
       if (data.threadId === reply.threadId) isDuplicate = true;
     });
@@ -78,21 +82,33 @@ async function logIntoSheets(reply: EmailConfig) {
       hour12: true,
     });
 
-    const values = [
-      [
-        `${formattedDate} - ${timeString}`,
-        reply.dateSent,
-        reply.to,
-        reply.jobTitle,
-        reply.companyName,
-        reply.gmailLink,
-        reply.threadId,
-      ],
-    ];
+    const values = isReferral
+      ? [
+          [
+            `${formattedDate} - ${timeString}`,
+            reply.dateSent,
+            reply.to,
+            reply.name,
+            reply.companyName,
+            reply.gmailLink,
+            reply.threadId,
+          ],
+        ]
+      : [
+          [
+            `${formattedDate} - ${timeString}`,
+            reply.dateSent,
+            reply.to,
+            reply.jobTitle,
+            reply.companyName,
+            reply.gmailLink,
+            reply.threadId,
+          ],
+        ];
 
     await sheets.spreadsheets.values.append({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: "Sheet2!A:G",
+      range: isReferral ? "Referrals_Recieved!A:G" : "Replies_Recieved!A:G",
       valueInputOption: "USER_ENTERED",
       requestBody: { values },
     } as sheets_v4.Params$Resource$Spreadsheets$Values$Append);
@@ -103,37 +119,65 @@ async function logIntoSheets(reply: EmailConfig) {
 }
 
 async function readSentEmailsFromSheets(
-  isAppliedSheets: boolean
+  isAppliedSheets: boolean,
+  isReferral: boolean
 ): Promise<EmailConfig[]> {
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
-    range: isAppliedSheets ? "Sheet1!A:F" : "Sheet2!A:G",
+    range: isReferral
+      ? isAppliedSheets
+        ? "Referrals_Sent!A:F"
+        : "Referrals_Recieved!A:G"
+      : isAppliedSheets
+      ? "Applications_Sent!A:F"
+      : "Replies_Recieved!A:G",
   });
 
   const rows = response.data.values;
   if (!rows || rows.length === 0) {
     throw new Error("No data found in the sheet.");
   }
-
-  if (isAppliedSheets)
-    return rows.map((row) => ({
-      dateSent: row[0],
-      to: row[1],
-      jobTitle: row[2],
-      companyName: row[3],
-      gmailLink: row[4],
-      threadId: row[5],
-    }));
-  else
-    return rows.map((row) => ({
-      dateChecked: row[0],
-      dateSent: row[1],
-      to: row[2],
-      jobTitle: row[3],
-      companyName: row[4],
-      gmailLink: row[5],
-      threadId: row[6],
-    }));
+  if (isReferral) {
+    if (isAppliedSheets)
+      return rows.map((row) => ({
+        dateSent: row[0],
+        to: row[1],
+        name: row[2],
+        companyName: row[3],
+        gmailLink: row[4],
+        threadId: row[5],
+      }));
+    else
+      return rows.map((row) => ({
+        dateChecked: row[0],
+        dateSent: row[1],
+        to: row[2],
+        name: row[3],
+        companyName: row[4],
+        gmailLink: row[5],
+        threadId: row[6],
+      }));
+  } else {
+    if (isAppliedSheets)
+      return rows.map((row) => ({
+        dateSent: row[0],
+        to: row[1],
+        jobTitle: row[2],
+        companyName: row[3],
+        gmailLink: row[4],
+        threadId: row[5],
+      }));
+    else
+      return rows.map((row) => ({
+        dateChecked: row[0],
+        dateSent: row[1],
+        to: row[2],
+        jobTitle: row[3],
+        companyName: row[4],
+        gmailLink: row[5],
+        threadId: row[6],
+      }));
+  }
 }
 
 async function checkForReplies(threadId: string): Promise<boolean> {
@@ -172,15 +216,22 @@ async function checkForReplies(threadId: string): Promise<boolean> {
 
 export async function GET(req: Request) {
   dotenv.config({ path: ".env.local" });
+  var isReferral: boolean = false;
 
   try {
-    const replies: EmailConfig[] = await readSentEmailsFromSheets(true);
-    await Promise.all(
-      replies.map(async (email: EmailConfig) => {
-        const hasReply: boolean = await checkForReplies(email.threadId);
-        if (hasReply) await logIntoSheets(email);
-      })
-    );
+    for (let i = 0; i < 2; i++) {
+      const replies: EmailConfig[] = await readSentEmailsFromSheets(
+        true,
+        isReferral
+      );
+      await Promise.all(
+        replies.map(async (email: EmailConfig) => {
+          const hasReply: boolean = await checkForReplies(email.threadId);
+          if (hasReply) await logIntoSheets(email, isReferral);
+        })
+      );
+      isReferral = true;
+    }
 
     if (noReplies > 0)
       return NextResponse.json(

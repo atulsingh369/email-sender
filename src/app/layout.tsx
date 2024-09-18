@@ -5,7 +5,9 @@ import { Inter } from 'next/font/google'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'MailWave',
+  title: 'JobNexus',
+  generator: 'Next.js',
+  applicationName: 'JobNexus - Email Sender',
   description: 'Send multiple customized emails',
 }
 

@@ -10,6 +10,7 @@ interface EmailConfig {
   jobTitle: string;
   hiringManager: string;
   companyName: string;
+  seniorURL?: string;
 }
 
 interface IDs {
@@ -123,24 +124,49 @@ const textContent = (
   industry: string,
   skills: string,
   companyName: string,
-  index: number
+  index: number,
+  isReferral: boolean,
+  seniorURL: string
 ): string => {
-  const text1: string = `Hi ${hiringManager},\n\nI'm eager to become your next ${jobTitle}!\n\nI recently came across the ${jobTitle} opening at ${companyName} on LinkedIn and felt compelled to reach out. With my ${process.env.YOE} years of experience in ${industry}, coupled with my skills in ${skills}, I beleive I'd be an excellent fit for your team. \n\nPlease find my resume and portfolio attached for your review. I'm really looking forward to discusssing how I can bring fresh ideas to your team, particularly in ${industry}.\n\n Excited about the possibility of working together!\n\n\Best, \n\n\n\nAtul Kumar Singh\nSoftware Developer\nhttps://www.linkedin.com/in/atulsingh369\n\nVisit my LinkTree\nhttps://linktr.ee/atulsingh369`;
+  const text1: string = `Hi ${hiringManager},\n\nI'm eager to become your next ${jobTitle}!\n\nI recently came across the ${jobTitle} opening at ${companyName} on LinkedIn and felt compelled to reach out. With my ${process.env.YOE} years of experience in ${industry}, coupled with my skills in ${skills}, I beleive I'd be an excellent fit for your team. \n\nPlease find my resume and portfolio attached for your review. I'm really looking forward to discusssing how I can bring fresh ideas to your team, particularly in ${industry}.\n\n Excited about the possibility of working together!\n\n\Best, \n\nAtul Kumar Singh\nSoftware Developer\nhttps://www.linkedin.com/in/atulsingh369\n\nVisit my LinkTree\nhttps://linktr.ee/atulsingh369`;
   const text2: string = `Dear ${hiringManager},\n\nI hope this message finds you well. I am writing to express my interest in the ${jobTitle} position at ${companyName} that I discovered through linkedin.\n\nWith ${process.env.YOE} years of experience in ${industry}, I am confident in my ability to contribute effectively to your team and believe my skills in ${skills} align well with the requirements of the role.\n\nThank you for considering my application. I have attached my resume for your review. I would welcome the opportunity to discuss how my background, skills, and passion for ${industry} make me a strong candidate for this position.\n\nI look forward to hearing from you soon.\n\nBest regards,\n\nAtul Kumar Singh\nSoftware Developer\nhttps://www.linkedin.com/in/atulsingh369\n\nVisit my LinkTree\nhttps://linktr.ee/atulsingh369`;
 
+  const referralText: string = `Dear [Name],\n\nI hope this email finds you well. My name is Atul Kumar Singh, and I'm a Software Developer with experience in full-stack development, particularly in web technologies and agile methodologies. I came across your profile on [LinkedIn/Company Website] and was impressed by your work at [Company Name].\n\nI'm reaching out because I'm very interested in joining [Company Name] as a Software Developer. Your insights into the company culture and work environment would be invaluable to me. I was wondering if you might have a few minutes to chat about your experience at [Company Name] and any potential opportunities that might be a good fit for someone with my background?.\n\nFor context, here's a brief overview of my experience:\n\n    • 1+ year of full-stack development experience.\n    • Proficient in Angular, React, Node.js, and cloud platforms like AWS\n    • Implemented Agile methodologies, improving team efficiency by 80%\n    • Developed projects that increased productivity by over 100%\n\nI've attached my resume for your reference. If you feel there might be a suitable role for me at [Company Name], I would be incredibly grateful if you could refer me or point me in the right direction.\n\nThank you for your time and consideration. I look forward to the possibility of connecting with you.\n\nBest regards,\n\nAtul Kumar Singh\nSoftware Developer\n+91 7518299883\nhttps://www.linkedin.com/in/atulsingh369\n\nVisit my LinkTree\nhttps://linktr.ee/atulsingh369`;
+
   const textSamples: string[] = [text1, text2];
+  if (isReferral)
+    return referralText
+      .replace("[Name]", hiringManager)
+      .replace("[Name]", hiringManager)
+      .replace("[Company Name]", companyName)
+      .replace("[Company Name]", companyName)
+      .replace("[Company Name]", companyName)
+      .replace("[Company Name]", companyName)
+      .replace("[Company Name]", companyName)
+      .replace("[Company Name]", companyName)
+      .replace("[LinkedIn/Company Website]", seniorURL)
+      .replace("[LinkedIn/Company Website]", seniorURL);
   return textSamples[index];
 };
 
-async function getAccessToken() {
-  const { token } = await oauth2Client.getAccessToken();
-  return token;
-}
+const subject = (
+  jobTitle: string,
+  companyName: string,
+  isReferral: boolean
+): string => {
+  if (isReferral) {
+    return `Seeking Your Advice: Software Developer Opportunities at ${companyName}`;
+  } else {
+    return `Application for ${jobTitle} Position in ${companyName}`;
+  }
+};
 
-async function constructGmailLink(to: string, jobTitle: string): Promise<IDs> {
-  const accessToken = await getAccessToken();
-  // Get the Gmail thread ID
-  // Get the Gmail thread ID
+async function constructGmailLink(
+  to: string,
+  jobTitle: string,
+  isReferral: boolean,
+  companyName: string
+): Promise<IDs> {
   const gmail: gmail_v1.Gmail = google.gmail({
     version: "v1",
     auth: oauth2Client,
@@ -148,11 +174,12 @@ async function constructGmailLink(to: string, jobTitle: string): Promise<IDs> {
 
   let gLink: string = "N/A";
   let theradId: string = "N/A";
+  const query: string = subject(jobTitle, companyName, isReferral);
 
   // Search for the message using query parameters
   const searchResponse = await gmail.users.messages.list({
     userId: "me",
-    q: `to:${to} subject:Application for ${jobTitle} Position`,
+    q: `to:${to} subject:${query}`,
     maxResults: 1,
   });
   if (searchResponse.data.messages && searchResponse.data.messages.length > 0) {
@@ -177,7 +204,8 @@ async function constructGmailLink(to: string, jobTitle: string): Promise<IDs> {
 async function logIntoSheets(
   gmailLink: string,
   threadId: string,
-  config: EmailConfig
+  config: EmailConfig,
+  isReferral: boolean
 ) {
   try {
     const auth = new google.auth.GoogleAuth({
@@ -202,20 +230,31 @@ async function logIntoSheets(
       hour12: true,
     });
 
-    const values = [
-      [
-        `${formattedDate} - ${timeString}`,
-        config.hiringManagerEmail,
-        config.jobTitle,
-        config.companyName,
-        gmailLink,
-        threadId,
-      ],
-    ];
+    const values = isReferral
+      ? [
+          [
+            `${formattedDate} - ${timeString}`,
+            config.hiringManagerEmail,
+            config.hiringManager,
+            config.companyName,
+            gmailLink,
+            threadId,
+          ],
+        ]
+      : [
+          [
+            `${formattedDate} - ${timeString}`,
+            config.hiringManagerEmail,
+            config.jobTitle,
+            config.companyName,
+            gmailLink,
+            threadId,
+          ],
+        ];
 
     await sheets.spreadsheets.values.append({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: "Sheet1!A:F",
+      range: isReferral ? "Referrals_Sent!A:F" : "Applications_Sent!A:F",
       valueInputOption: "USER_ENTERED",
       requestBody: { values },
     } as sheets_v4.Params$Resource$Spreadsheets$Values$Append);
@@ -229,7 +268,9 @@ export async function POST(request: Request) {
   const {
     emailConfigs,
     index,
-  }: { emailConfigs: EmailConfig[]; index: number } = await request.json();
+    isReferral,
+  }: { emailConfigs: EmailConfig[]; index: number; isReferral: boolean } =
+    await request.json();
 
   if (!Array.isArray(emailConfigs) || emailConfigs.length === 0) {
     return NextResponse.json(
@@ -250,6 +291,24 @@ export async function POST(request: Request) {
   const resume = await fs.readFile(resumePath);
   const coverLetter = await fs.readFile(coverLetterPath);
 
+  const attachments = isReferral
+    ? [
+        {
+          filename: path.basename(resumePath),
+          content: resume,
+        },
+      ]
+    : [
+        {
+          filename: path.basename(resumePath),
+          content: resume,
+        },
+        {
+          filename: path.basename(coverLetterPath),
+          content: coverLetter,
+        },
+      ];
+
   const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: parseInt(process.env.SMTP_PORT || "587"),
@@ -266,43 +325,50 @@ export async function POST(request: Request) {
     for (const config of emailConfigs) {
       // Proccessing other values like industry and skills
       await initVariable(config);
+      const seniorURL: string = isReferral
+        ? config.seniorURL
+          ? config.seniorURL
+          : ""
+        : "";
 
       // Processing the email
       const info = await transporter.sendMail({
         from: process.env.FROM_EMAIL,
         to: config.hiringManagerEmail,
-        subject: `Application for ${config.jobTitle} Position in ${config.companyName}`,
+        subject: subject(config.jobTitle, config.companyName, isReferral),
         text: textContent(
           config.hiringManager,
           config.jobTitle,
           industry,
           skills,
           config.companyName,
-          index
+          index,
+          isReferral,
+          seniorURL
         ),
-        attachments: [
-          {
-            filename: path.basename(resumePath),
-            content: resume,
-          },
-          {
-            filename: path.basename(coverLetterPath),
-            content: coverLetter,
-          },
-        ],
+        attachments: [...attachments],
       });
 
       // Wait for a short period to ensure the message is available in Gmail
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
       // Proccessing GMail Link
-      await constructGmailLink(config.hiringManagerEmail, config.jobTitle).then(
-        async (links) => {
-          // Processing Logging in Sheets
-          await logIntoSheets(links.gmailLink, links.threadId, config);
-        }
-      );
+      await constructGmailLink(
+        config.hiringManagerEmail,
+        config.jobTitle,
+        isReferral,
+        config.companyName
+      ).then(async (links) => {
+        // Processing Logging in Sheets
+        await logIntoSheets(
+          links.gmailLink,
+          links.threadId,
+          config,
+          isReferral
+        );
+      });
     }
+    // return NextResponse.json({ text: text }, { status: 200 });
     return NextResponse.json(
       { message: "Emails sent successfully" },
       { status: 200 }
