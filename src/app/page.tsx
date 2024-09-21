@@ -116,6 +116,70 @@ export default function Home() {
     }
   };
 
+  const scanJobs = async () => {
+    setEmailStatus("Scanning...");
+    try {
+      const response = await fetch("/api/scan-jobs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ index: textidx }),
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorJson;
+        try {
+          errorJson = JSON.parse(errorText);
+          setEmailStatus(`Failed scan and send mails: ${errorJson.message}`);
+        } catch (parseError) {
+          console.error("Error parsing response:", errorText);
+          setEmailStatus(`Failed scan and send mails: ${response.statusText}`);
+        }
+      } else {
+        const result = await response.json();
+        setEmailStatus(result.message || "Scanned and Sent Mail Succesfully");
+      }
+    } catch (error) {
+      console.error("Error sending emails:", error);
+      setEmailStatus(
+        `An error occurred: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    }
+  };
+
+  const bouncedMails = async () => {
+    setEmailStatus("Checking...");
+    try {
+      const response = await fetch("/api/bounced-mails", {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorJson;
+        try {
+          errorJson = JSON.parse(errorText);
+          setEmailStatus(`Failed check bounced: ${errorJson.message}`);
+        } catch (parseError) {
+          console.error("Error parsing response:", errorText);
+          setEmailStatus(`Failed check bounced: ${response.statusText}`);
+        }
+      } else {
+        const result = await response.json();
+        setEmailStatus(result.message || "Bounced Mails Checked Succesfully");
+      }
+    } catch (error) {
+      console.error("Error sending emails:", error);
+      setEmailStatus(
+        `An error occurred: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    }
+  };
+
   return (
     <>
       <div className="container mx-auto p-4">
@@ -292,13 +356,30 @@ export default function Home() {
         {emailStatus && (
           <p className="mt-4 text-center font-bold text-lg">{emailStatus}</p>
         )}
-        <button
-          type="button"
-          onClick={() => router.push("/search-jobs")}
-          className="bg-fuchsia-500 hover:bg-fuchsia-700 text-white font-bold py-2 px-4 mx-auto my-5 rounded focus:outline-none focus:shadow-outline"
-        >
-          Go to Search Job
-        </button>
+
+        <div className="flex justify-evenly items-center mt-5">
+          <button
+            type="button"
+            onClick={() => router.push("/search-jobs")}
+            className="bg-fuchsia-500 hover:bg-fuchsia-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+          >
+            Go to Search Job
+          </button>
+          <button
+            type="button"
+            onClick={scanJobs}
+            className="bg-orange-500 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+          >
+            Scan and Send Mail
+          </button>
+          <button
+            type="button"
+            onClick={bouncedMails}
+            className="bg-rose-500 hover:bg-rose-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+          >
+            Search Bounced Mails
+          </button>
+        </div>
       </div>
     </>
   );

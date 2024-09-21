@@ -9,13 +9,17 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@types/imap": "^0.8.40",
+    "@types/mailparser": "^3.4.4",
     "axios": "^1.7.7",
     "cheerio": "^1.0.0",
     "dotenv": "^16.4.5",
     "google-auth-library": "^9.14.1",
     "googleapis": "^144.0.0",
+    "imap": "^0.8.19",
     "limiter": "^2.1.0",
     "lodash": "^4.17.21",
+    "mailparser": "^3.7.1",
     "next": "14.2.9",
     "nodemailer": "^6.9.15",
     "puppeteer": "^23.3.0",

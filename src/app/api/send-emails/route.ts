@@ -72,10 +72,10 @@ const initVariable = async (config: EmailConfig) => {
     config.jobTitle === "Frontend Developer Intern" ||
     config.jobTitle === "Senior Frontend Developer Intern" ||
     config.jobTitle === "Senior Frontend Developer" ||
-    config.jobTitle === "React.js Developer" ||
-    config.jobTitle === "React.js Developer Intern" ||
-    config.jobTitle === "Senior React.js Developer Intern" ||
-    config.jobTitle === "Senior React.js Developer" ||
+    config.jobTitle === "React Developer" ||
+    config.jobTitle === "React Developer Intern" ||
+    config.jobTitle === "Senior React Developer Intern" ||
+    config.jobTitle === "Senior React Developer" ||
     config.jobTitle === "React.js Developer" ||
     config.jobTitle === "React.js Developer Intern" ||
     config.jobTitle === "Senior React.js Developer Intern" ||
