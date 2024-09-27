@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import axios from "axios";
 import dotenv from "dotenv";
 import path from "path";
-import cheerio from "cheerio";
+import * as cheerio from 'cheerio';
 import { google, sheets_v4 } from "googleapis";
 import { RateLimiter } from "limiter";
 import { link } from "fs";

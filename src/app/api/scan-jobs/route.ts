@@ -14,11 +14,6 @@ interface EmailConfig {
   name: string;
   companyName: string;
   email: string;
-  phn1: string;
-  phn2: string;
-  desg: string;
-  loc: string;
-  linkedInURL: string;
 }
 
 interface IDs {
@@ -67,7 +62,7 @@ const textContent = (
 };
 
 const subject = (jobTitle: string, companyName: string): string => {
-  return `Application for ${jobTitle} Position in ${companyName}`;
+  return `Application for ${jobTitle} Position`;
 };
 
 async function logIntoSheets(
@@ -123,22 +118,27 @@ async function logIntoSheets(
 async function readEmailsFromSheets(): Promise<EmailConfig[]> {
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
-    range: "CustomerContact!A:H",
+    range: "Job_Sheet!A:A",
   });
 
   const rows = response.data.values;
   if (!rows || rows.length === 0) {
     throw new Error("No data found in the sheet.");
   }
+  // return rows.map((row) => ({
+  //   name: 'row[0]',
+  //   companyName: row[1],
+  //   email: row[2],
+  //   phn1: row[3],
+  //   phn2: row[4],
+  //   desg: row[5],
+  //   loc: row[6],
+  //   linkedInURL: row[7],
+  // }));
   return rows.map((row) => ({
-    name: row[0],
-    companyName: row[1],
-    email: row[2],
-    phn1: row[3],
-    phn2: row[4],
-    desg: row[5],
-    loc: row[6],
-    linkedInURL: row[7],
+    name: "Hiring Team",
+    email: row[0],
+    companyName: "your esteemed Organization",
   }));
 }
 
@@ -214,8 +214,11 @@ export async function POST(req: Request) {
     const dataFromSheet: EmailConfig[] = await readEmailsFromSheets();
 
     for (const config of dataFromSheet) {
-      if (config.email !== "") {
-        // Processing the email
+      // Processing the email
+
+      // const companyName = config.email.split("@")[1];
+
+      if (config.email && config.email !== "") {
         const info = await transporter.sendMail({
           from: process.env.FROM_EMAIL,
           to: config.email.toLowerCase(),
@@ -225,7 +228,7 @@ export async function POST(req: Request) {
             "Software Developer",
             "Software Developement & Engineering",
             "MERN & MEAN stack, including Next.js and creating APIs, also implementation of GoLang to create robust Backend, including cloud services like AWS & Firebase",
-            config.companyName,
+            "your esteemed Organization",
             index
           ),
           attachments: [
